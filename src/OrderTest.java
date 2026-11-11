@@ -72,5 +72,16 @@ public class OrderTest {
 
         order.getStages().clear();
         TestUtils.check("getStages().clear() не меняет заказ --> 6 этапов", order.getStages().size() == 6);
+        TestUtils.check("order.getStage(StageType.RETOUCH).getType() == StageType.RETOUCH",order.getStage(StageType.RETOUCH).getType() == StageType.RETOUCH);
+        thrown = false;
+        try{
+            order.getStage(null);
+        }catch (IllegalArgumentException e){
+            thrown = true;
+        }
+        TestUtils.check("order.getStage(null) → IllegalArgumentException",thrown);
+        Stage first = order.getStage(StageType.RETOUCH);
+        Stage second = order.getStage(StageType.RETOUCH);
+        TestUtils.check("getStage(RETOUCH) дважды --> один и тот же объект", first == second);
     }
 }

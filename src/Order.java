@@ -59,4 +59,16 @@ public class Order {
     public List<Stage> getStages() {
         return new ArrayList<>(stages);
     }
+
+    public Stage getStage(StageType stageType) {
+        if (stageType == null) {
+            throw new IllegalArgumentException("Тип не может быть пустым");
+        }
+        for (Stage stage : stages) {
+            if (stage.getType() == stageType) {
+                return stage;
+            }
+        }
+        throw new IllegalArgumentException("В заказе нет этапа: " + stageType);
+    }
 }
