@@ -72,16 +72,77 @@ public class OrderTest {
 
         order.getStages().clear();
         TestUtils.check("getStages().clear() не меняет заказ --> 6 этапов", order.getStages().size() == 6);
-        TestUtils.check("order.getStage(StageType.RETOUCH).getType() == StageType.RETOUCH",order.getStage(StageType.RETOUCH).getType() == StageType.RETOUCH);
+        TestUtils.check("order.getStage(StageType.RETOUCH).getType() == StageType.RETOUCH", order.getStage(StageType.RETOUCH).getType() == StageType.RETOUCH);
         thrown = false;
-        try{
+        try {
             order.getStage(null);
-        }catch (IllegalArgumentException e){
+        } catch (IllegalArgumentException e) {
             thrown = true;
         }
-        TestUtils.check("order.getStage(null) → IllegalArgumentException",thrown);
+        TestUtils.check("order.getStage(null) → IllegalArgumentException", thrown);
         Stage first = order.getStage(StageType.RETOUCH);
         Stage second = order.getStage(StageType.RETOUCH);
         TestUtils.check("getStage(RETOUCH) дважды --> один и тот же объект", first == second);
+//       frames
+        Order order2 = new Order("Человек", ShootType.PORTRAIT, LocalDateTime.of(2026, 11, 15, 15, 0), 3, 2000);
+        TestUtils.check("new Order(..).hasShotFrames --> false", !order2.hasShotFrames());
+        TestUtils.check("new Order(..).cullingMinutes() --> 0", TestUtils.equalsDouble(order2.cullingMinutes(), 0.0, 0.001));
+        Order order1 = new Order("Человек", ShootType.PORTRAIT, LocalDateTime.of(2026, 11, 15, 15, 0), 3, 2000);
+        order1.setShotFrames(8000);
+        TestUtils.check("order1.hasShotFrames() --> true", order1.hasShotFrames());
+        TestUtils.check("order1.getShotFrames() --> 8000", order1.getShotFrames() == 8000);
+        TestUtils.check("order1.cullingMinutes() --> 240", TestUtils.equalsDouble(order1.cullingMinutes(), 240.0, 0.001));
+        thrown = false;
+        try {
+            order1.setShotFrames(0);
+        } catch (IllegalArgumentException e) {
+            thrown = true;
+        }
+        TestUtils.check("setShotFrames(0) --> IllegalArgumentException", thrown);
+        thrown = false;
+        try {
+            order1.setShotFrames(-500);
+        } catch (IllegalArgumentException e) {
+            thrown = true;
+        }
+        TestUtils.check("setShotFrames(-500) --> IllegalArgumentException", thrown);
+        TestUtils.check("order1.getShotFrames() после некорректного ввода по прежнему --> 8000", order1.getShotFrames() == 8000);
+        thrown = false;
+        try {
+            order1.setSelectedFrames(9000);
+        } catch (IllegalArgumentException e) {
+            thrown = true;
+        }
+        TestUtils.check("Отобрано больше, чем снято: setSelectedFrames(9000) при 8000 → IllegalArgumentException", thrown);
+        Order orderWithoutShots = new Order("Человек", ShootType.PORTRAIT, LocalDateTime.of(2026, 11, 15, 15, 0), 3, 2000);
+        thrown = false;
+        try {
+            orderWithoutShots.setSelectedFrames(100);
+        } catch (IllegalStateException e) {
+            thrown = true;
+        }
+        TestUtils.check("Сразу этап 2, без внесения отснятых кадров orderWithoutShots.setSelectedFrames(100) --> IllegalStateException", thrown);
+        order1.setSelectedFrames(800);
+        TestUtils.check("order1.getSelectedFrames() --> 800", order1.getSelectedFrames() == 800);
+        thrown = false;
+        try {
+            order1.setSelectedFrames(0);
+        } catch (IllegalArgumentException e) {
+            thrown = true;
+        }
+        TestUtils.check("setSelectedFrames(0) --> IllegalArgumentException", thrown);
+        order1.setSelectedFrames(8000);
+        TestUtils.check("Граница: setSelectedFrames(8000) при 8000 снятых → разрешено", order1.getSelectedFrames() == 8000);
+        order1.setSelectedFrames(800);
+        TestUtils.check("setSelectedFrames(800) → colorMinutes()", TestUtils.equalsDouble(order1.colorMinutes(), 800.0 / 100 * ShootType.PORTRAIT.getColorMinutesPer100(), 0.001));
+        TestUtils.check("setSelectedFrames(800) → retouchMinutes()", TestUtils.equalsDouble(order1.retouchMinutes(), 800.0 * ShootType.PORTRAIT.getRetouchMinutesPerFrame(), 0.001));
+        thrown = false;
+        try {
+            order1.setShotFrames(500);
+        } catch (IllegalArgumentException e) {
+            thrown = true;
+        }
+        TestUtils.check("500 снятых при уже 800 отобранных order1.setShotFrames(500) --> IllegalArgumentException", thrown);
+        TestUtils.check("после отказа order1.getShotFrames() == 8000", order1.getShotFrames() == 8000);
     }
 }

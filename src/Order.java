@@ -3,12 +3,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Order {
+    private static final int CULLING_MINUTES_PER_100 = 3;
+    private static final int FRAMES_IN_PACKAGE = 100;
+
     private final String client;
     private final ShootType shootType;
     private final LocalDateTime dateTimeShoot;
     private final double hours;
     private final int price;
     private final List<Stage> stages = new ArrayList<>();
+    private int shotFrames;
+    private int selectedFrames;
 
     Order(String client, ShootType shootType, LocalDateTime dateTimeShoot, double hours, int price) {
         if (client == null || client.isBlank()) {
@@ -56,6 +61,7 @@ public class Order {
     public int getPrice() {
         return price;
     }
+
     public List<Stage> getStages() {
         return new ArrayList<>(stages);
     }
@@ -71,4 +77,67 @@ public class Order {
         }
         throw new IllegalArgumentException("В заказе нет этапа: " + stageType);
     }
+
+    public int getShotFrames() {
+        return shotFrames;
+    }
+
+    public int getSelectedFrames() {
+        return selectedFrames;
+    }
+
+    boolean hasShotFrames() {
+        return shotFrames > 0;
+    }
+
+    boolean hasSelectedFrames() {
+        return selectedFrames > 0;
+    }
+
+    public void setShotFrames(int shotFrames) {
+        if (shotFrames <= 0) {
+            throw new IllegalArgumentException("Количество отснятых кадров должно быть больше 0");
+        }
+        if (selectedFrames > shotFrames) {
+            throw new IllegalArgumentException("Количество отобранных кадров не может быть больше количества отснятых кадров");
+        }
+        this.shotFrames = shotFrames;
+    }
+
+    public void setSelectedFrames(int selectedFrames) {
+        if (!hasShotFrames()) {
+            throw new IllegalStateException("Пропущен этап внесения отснятых кадров");
+        }
+        if (selectedFrames <= 0) {
+            throw new IllegalArgumentException("Количество отобранных кадров должно быть больше 0");
+        }
+        if (selectedFrames > shotFrames) {
+            throw new IllegalArgumentException("Количество отобранных кадров не может быть больше количества отснятых кадров");
+        }
+
+        this.selectedFrames = selectedFrames;
+    }
+
+    double cullingMinutes() {
+        if (shotFrames == 0) {
+            return 0;
+        }
+        return (double) shotFrames * CULLING_MINUTES_PER_100 / FRAMES_IN_PACKAGE;
+    }
+
+    double colorMinutes() {
+        if (selectedFrames == 0) {
+            return 0;
+        }
+        return (double) selectedFrames / FRAMES_IN_PACKAGE * shootType.getColorMinutesPer100();
+    }
+
+    double retouchMinutes() {
+        if (selectedFrames == 0) {
+            return 0;
+        }
+        return selectedFrames * shootType.getRetouchMinutesPerFrame();
+    }
+
+
 }
