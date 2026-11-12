@@ -153,6 +153,30 @@ public class OrderTest {
         TestUtils.check("свадьба 14.11 в 23:30 → срок 2026-11-28, время не влияет", orderWeddingEvening.deadline().equals(LocalDate.of(2026, 11, 28)));
         Order orderReportage = new Order("Жанна", ShootType.REPORTAGE, LocalDateTime.of(2026, 11, 28, 23, 30), 12, 50000);
         TestUtils.check("Репортаж orderReportage.deadline() --> 2026-12-05", orderReportage.deadline().equals(LocalDate.of(2026, 12, 5)));
+        orderWedding.setShotFrames(8000);
+        TestUtils.check("orderWedding.stageDays(StageType.CULLING) --> 2", orderWedding.stageDays(StageType.CULLING) == 2);
+        TestUtils.check("снято 8000, отобранных нет → stageDeadline(CULLING) пусто", orderWedding.stageDeadline(StageType.CULLING).isEmpty());
+        orderWedding.setSelectedFrames(800);
+        TestUtils.check("orderWedding.stageDeadline(StageType.CULLING) --> 21.11.2026", LocalDate.of(2026, 11, 21).equals(orderWedding.stageDeadline(StageType.CULLING).orElse(null)));
+        TestUtils.check("orderWedding.stageDays(StageType.COLOR) --> 1", orderWedding.stageDays(StageType.COLOR) == 1);
+        TestUtils.check("orderWedding.stageDeadline(StageType.COLOR) --> 22.11.2026", LocalDate.of(2026, 11, 22).equals(orderWedding.stageDeadline(StageType.COLOR).orElse(null)));
+        TestUtils.check("orderWedding.stageDays(StageType.RETOUCH) --> 5", orderWedding.stageDays(StageType.RETOUCH) == 5);
+        TestUtils.check("orderWedding.stageDeadline(StageType.RETOUCH) --> 27.11.2026", LocalDate.of(2026, 11, 27).equals(orderWedding.stageDeadline(StageType.RETOUCH).orElse(null)));
+        TestUtils.check("orderWedding.stageDeadline(StageType.EXPORT) --> 27.11.2026", LocalDate.of(2026, 11, 27).equals(orderWedding.stageDeadline(StageType.EXPORT).orElse(null)));
+        TestUtils.check("orderWedding.stageDeadline(StageType.DELIVERY) --> 27.11.2026", LocalDate.of(2026, 11, 27).equals(orderWedding.stageDeadline(StageType.DELIVERY).orElse(null)));
+        TestUtils.check("orderWedding.stageDays(StageType.EXPORT) --> 0", orderWedding.stageDays(StageType.EXPORT) == 0);
+        TestUtils.check("orderWedding.stageDays(StageType.DELIVERY) --> 0", orderWedding.stageDays(StageType.DELIVERY) == 0);
+        TestUtils.check("orderWedding.stageDays(StageType.REVISIONS) --> 1", orderWedding.stageDays(StageType.REVISIONS) == 1);
+        Order noFrames = new Order("Ольга", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 15, 0), 8, 40000);
+        TestUtils.check("заказ без кадров → stageDeadline(RETOUCH) пусто", noFrames.stageDeadline(StageType.RETOUCH).isEmpty());
+        TestUtils.check("orderWedding.stageDeadline(StageType.REVISIONS) --> 28.11.2026", LocalDate.of(2026, 11, 28).equals(orderWedding.stageDeadline(StageType.REVISIONS).orElse(null)));
+        thrown = false;
+        try {
+            orderWedding.stageDeadline(null);
+        } catch (IllegalArgumentException e) {
+            thrown = true;
+        }
+        TestUtils.check("orderWedding.stageDeadline(null) --> IAE", thrown);
 
     }
 }
