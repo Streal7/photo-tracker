@@ -1,3 +1,4 @@
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -139,5 +140,7 @@ public class Order {
         return selectedFrames * shootType.getRetouchMinutesPerFrame();
     }
 
-
+    public LocalDate deadline() {
+        return dateTimeShoot.toLocalDate().plusDays(shootType.getDeadlineDays());
+    }
 }

@@ -1,3 +1,4 @@
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class OrderTest {
@@ -144,5 +145,14 @@ public class OrderTest {
         }
         TestUtils.check("500 снятых при уже 800 отобранных order1.setShotFrames(500) --> IllegalArgumentException", thrown);
         TestUtils.check("после отказа order1.getShotFrames() == 8000", order1.getShotFrames() == 8000);
+        Order orderWedding = new Order("Анна", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 15, 0), 12, 50000);
+        TestUtils.check("Свадьба orderWedding.deadline() --> 2026-11-28", orderWedding.deadline().equals(LocalDate.of(2026, 11, 28)));
+        Order orderPortrait = new Order("Ванна", ShootType.PORTRAIT, LocalDateTime.of(2026, 11, 14, 15, 0), 1, 5000);
+        TestUtils.check(" Портрет orderPortrait.deadline() --> 2026-11-19", orderPortrait.deadline().equals(LocalDate.of(2026, 11, 19)));
+        Order orderWeddingEvening = new Order("Жанна", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 23, 30), 2, 7000);
+        TestUtils.check("свадьба 14.11 в 23:30 → срок 2026-11-28, время не влияет", orderWeddingEvening.deadline().equals(LocalDate.of(2026, 11, 28)));
+        Order orderReportage = new Order("Жанна", ShootType.REPORTAGE, LocalDateTime.of(2026, 11, 28, 23, 30), 12, 50000);
+        TestUtils.check("Репортаж orderReportage.deadline() --> 2026-12-05", orderReportage.deadline().equals(LocalDate.of(2026, 12, 5)));
+
     }
 }
