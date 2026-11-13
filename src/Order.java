@@ -2,10 +2,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class Order {
     private static final int CULLING_MINUTES_PER_100 = 3;
     private static final int FRAMES_IN_PACKAGE = 100;
+    private static final int PROCESSING_HOURS_PER_DAY = 3;
+    private static final int REVISION_DAYS = 1;
+    private static final int MINUTES_PER_HOUR = 60;
+    private static final double SELECTION_RATE = 0.10;
 
     private final String client;
     private final ShootType shootType;
@@ -127,20 +132,57 @@ public class Order {
     }
 
     double colorMinutes() {
-        if (selectedFrames == 0) {
+        if (!hasShotFrames()) {
             return 0;
         }
-        return (double) selectedFrames / FRAMES_IN_PACKAGE * shootType.getColorMinutesPer100();
+        return (double) plannedSelectedFrames() / FRAMES_IN_PACKAGE * shootType.getColorMinutesPer100();
     }
 
     double retouchMinutes() {
-        if (selectedFrames == 0) {
+        if (!hasShotFrames()) {
             return 0;
         }
-        return selectedFrames * shootType.getRetouchMinutesPerFrame();
+        return plannedSelectedFrames() * shootType.getRetouchMinutesPerFrame();
     }
 
     public LocalDate deadline() {
         return dateTimeShoot.toLocalDate().plusDays(shootType.getDeadlineDays());
     }
+
+    private int daysFor(double minutes) {
+        return (int) Math.ceil(minutes / MINUTES_PER_HOUR / PROCESSING_HOURS_PER_DAY);
+    }
+
+    int stageDays(StageType type) {
+        return switch (type) {
+            case CULLING -> daysFor(cullingMinutes());
+            case COLOR -> daysFor(colorMinutes());
+            case RETOUCH -> daysFor(retouchMinutes());
+            case EXPORT, DELIVERY -> 0;
+            case REVISIONS -> REVISION_DAYS;
+        };
+    }
+
+    Optional<LocalDate> stageDeadline(StageType type) {
+        if (type == null) {
+            throw new IllegalArgumentException("Тип не может отсутствовать");
+        }
+        if (!hasShotFrames()) {
+            return Optional.empty();
+        }
+        LocalDate date = deadline();                           // начинаем со срока сдачи
+        for (int i = stages.size() - 1; i >= 0; i--) {         // этапы с последнего
+            StageType current = stages.get(i).getType();
+            if (current == type) {
+                return Optional.of(date);                      // срок этого этапа = текущая date
+            }
+            date = date.minusDays(stageDays(current));         // сдвиг ПОСЛЕ проверки
+        }
+        throw new IllegalArgumentException("В заказе нет этапа: " + type);
+    }
+
+    int plannedSelectedFrames() {
+        return hasSelectedFrames() ? selectedFrames : (int) Math.round(shotFrames * SELECTION_RATE);
+    }
+
 }
