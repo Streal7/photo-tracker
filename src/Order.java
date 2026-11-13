@@ -132,17 +132,17 @@ public class Order {
     }
 
     double colorMinutes() {
-        if (selectedFrames == 0) {
+        if (!hasShotFrames()) {
             return 0;
         }
-        return (double) selectedFrames / FRAMES_IN_PACKAGE * shootType.getColorMinutesPer100();
+        return (double) plannedSelectedFrames() / FRAMES_IN_PACKAGE * shootType.getColorMinutesPer100();
     }
 
     double retouchMinutes() {
-        if (selectedFrames == 0) {
+        if (!hasShotFrames()) {
             return 0;
         }
-        return selectedFrames * shootType.getRetouchMinutesPerFrame();
+        return plannedSelectedFrames() * shootType.getRetouchMinutesPerFrame();
     }
 
     public LocalDate deadline() {
@@ -167,7 +167,7 @@ public class Order {
         if (type == null) {
             throw new IllegalArgumentException("Тип не может отсутствовать");
         }
-        if (!hasSelectedFrames()) {
+        if (!hasShotFrames()) {
             return Optional.empty();
         }
         LocalDate date = deadline();                           // начинаем со срока сдачи
@@ -179,6 +179,10 @@ public class Order {
             date = date.minusDays(stageDays(current));         // сдвиг ПОСЛЕ проверки
         }
         throw new IllegalArgumentException("В заказе нет этапа: " + type);
+    }
+
+    int plannedSelectedFrames() {
+        return hasSelectedFrames() ? selectedFrames : (int) Math.round(shotFrames * SELECTION_RATE);
     }
 
 }

@@ -153,9 +153,10 @@ public class OrderTest {
         TestUtils.check("свадьба 14.11 в 23:30 → срок 2026-11-28, время не влияет", orderWeddingEvening.deadline().equals(LocalDate.of(2026, 11, 28)));
         Order orderReportage = new Order("Жанна", ShootType.REPORTAGE, LocalDateTime.of(2026, 11, 28, 23, 30), 12, 50000);
         TestUtils.check("Репортаж orderReportage.deadline() --> 2026-12-05", orderReportage.deadline().equals(LocalDate.of(2026, 12, 5)));
+        TestUtils.check("orderWedding.plannedSelectedFrames() --> 0", orderWedding.plannedSelectedFrames() == 0);
         orderWedding.setShotFrames(8000);
         TestUtils.check("orderWedding.stageDays(StageType.CULLING) --> 2", orderWedding.stageDays(StageType.CULLING) == 2);
-        TestUtils.check("снято 8000, отобранных нет → stageDeadline(CULLING) пусто", orderWedding.stageDeadline(StageType.CULLING).isEmpty());
+        TestUtils.check("orderWedding.plannedSelectedFrames() --> 800", orderWedding.plannedSelectedFrames() == 800);
         orderWedding.setSelectedFrames(800);
         TestUtils.check("orderWedding.stageDeadline(StageType.CULLING) --> 21.11.2026", LocalDate.of(2026, 11, 21).equals(orderWedding.stageDeadline(StageType.CULLING).orElse(null)));
         TestUtils.check("orderWedding.stageDays(StageType.COLOR) --> 1", orderWedding.stageDays(StageType.COLOR) == 1);
@@ -177,6 +178,23 @@ public class OrderTest {
             thrown = true;
         }
         TestUtils.check("orderWedding.stageDeadline(null) --> IAE", thrown);
-
+        Order order3 = new Order("Клиентушка", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 12, 0), 2, 2000);
+        order3.setShotFrames(8000);
+        order3.setSelectedFrames(1200);
+        TestUtils.check("order3.stageDeadline(StageType.CULLING) --> 18.11.2026", LocalDate.of(2026, 11, 18).equals(order3.stageDeadline(StageType.CULLING).orElse(null)));
+        TestUtils.check("order3.stageDeadline(StageType.COLOR) --> 20.11.2026", LocalDate.of(2026, 11, 20).equals(order3.stageDeadline(StageType.COLOR).orElse(null)));
+        TestUtils.check("order3.stageDeadline(StageType.RETOUCH) --> 27.11.2026", LocalDate.of(2026, 11, 27).equals(order3.stageDeadline(StageType.RETOUCH).orElse(null)));
+        TestUtils.check("order3.stageDeadline(StageType.EXPORT) --> 27.11.2026", LocalDate.of(2026, 11, 27).equals(order3.stageDeadline(StageType.EXPORT).orElse(null)));
+        TestUtils.check("order3.stageDeadline(StageType.DELIVERY) --> 27.11.2026", LocalDate.of(2026, 11, 27).equals(order3.stageDeadline(StageType.DELIVERY).orElse(null)));
+        TestUtils.check("order3.stageDeadline(StageType.REVISIONS) --> 28.11.2026", LocalDate.of(2026, 11, 28).equals(order3.stageDeadline(StageType.REVISIONS).orElse(null)));
+        TestUtils.check("order3.stageDays(StageType.COLOR) --> 2", order3.stageDays(StageType.COLOR) == 2);
+        TestUtils.check("order3.stageDays(StageType.RETOUCH) --> 7", order3.stageDays(StageType.RETOUCH) == 7);
+        Order onlyShot = new Order("Ирина", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 15, 0), 8, 40000);
+        onlyShot.setShotFrames(8000);
+        TestUtils.check("onlyShot.stageDeadline(StageType.CULLING) --> 21.11.2026", LocalDate.of(2026, 11, 21).equals(onlyShot.stageDeadline(StageType.CULLING).orElse(null)));
+        Order rounding = new Order("Олег", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 15, 0), 8, 40000);
+        rounding.setShotFrames(8335);
+        TestUtils.check("прогноз 8335 × 10% = 833.5 → Math.round → 834",
+                rounding.plannedSelectedFrames() == 834);
     }
 }
