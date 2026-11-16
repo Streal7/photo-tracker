@@ -185,4 +185,25 @@ public class Order {
         return hasSelectedFrames() ? selectedFrames : (int) Math.round(shotFrames * SELECTION_RATE);
     }
 
+    boolean isCompleted() {
+        for (Stage stage : stages) {
+            if (stage.getStatus() != StageStatus.DONE) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    List<Stage> stagesDue(LocalDate today) {
+        List<Stage> result = new ArrayList<>();
+        for (Stage stage : stages) {
+            Optional<LocalDate> due = stageDeadline(stage.getType());
+            if (due.isPresent()
+                    && !due.get().isAfter(today)
+                    && stage.getStatus() != StageStatus.DONE) {
+                result.add(stage);
+            }
+        }
+        return result;
+    }
 }

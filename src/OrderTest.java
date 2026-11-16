@@ -1,5 +1,6 @@
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class OrderTest {
     public static void main(String[] args) {
@@ -196,5 +197,44 @@ public class OrderTest {
         rounding.setShotFrames(8335);
         TestUtils.check("прогноз 8335 × 10% = 833.5 → Math.round → 834",
                 rounding.plannedSelectedFrames() == 834);
+        Order fresh = new Order("Света", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 15, 0), 8, 40000);
+        TestUtils.check("новый заказ → isCompleted false", !fresh.isCompleted());
+
+        Order allDone = new Order("Света", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 15, 0), 8, 40000);
+        for (StageType type : StageType.values()) {
+            allDone.getStage(type).start();
+            allDone.getStage(type).finish(60);
+        }
+        TestUtils.check("все 6 этапов DONE → isCompleted true", allDone.isCompleted());
+
+        Order fiveDone = new Order("Света", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 15, 0), 8, 40000);
+        for (StageType type : StageType.values()) {
+            if (type != StageType.REVISIONS) {
+                fiveDone.getStage(type).start();
+                fiveDone.getStage(type).finish(60);
+            }
+        }
+        TestUtils.check("5 из 6 DONE (правки не начаты) → isCompleted false", !fiveDone.isCompleted());
+
+        Order orderDue = new Order("Света", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 15, 0), 8, 40000);
+        orderDue.setShotFrames(8000);
+        orderDue.setSelectedFrames(800);
+        List<Stage> due = orderDue.stagesDue(LocalDate.of(2026, 11, 20));
+        TestUtils.check("Список горящих заданий пуст, ничего не горит раньше срок --> isEmpty()", due.isEmpty());
+        due = orderDue.stagesDue(LocalDate.of(2026, 11, 21));
+        TestUtils.check("21.11: срок отбора сегодня --> size = 1, горит отбор", due.size() == 1 && due.get(0).getType() == StageType.CULLING);
+        due = orderDue.stagesDue(LocalDate.of(2026, 11, 22));
+        TestUtils.check("просроченный + сегодняшний --> size = 2, горят отбор и цвет", due.size() == 2 && due.get(0).getType() == StageType.CULLING && due.get(1).getType() == StageType.COLOR);
+        due = orderDue.stagesDue(LocalDate.of(2026, 11, 28));
+        TestUtils.check("size = 6, все сроки прошли", due.size() == 6 && due.get(0).getType() == StageType.CULLING && due.get(1).getType() == StageType.COLOR && due.get(2).getType() == StageType.RETOUCH && due.get(3).getType() == StageType.EXPORT && due.get(4).getType() == StageType.DELIVERY && due.get(5).getType() == StageType.REVISIONS);
+        orderDue.getStage(StageType.CULLING).start();
+        orderDue.getStage(StageType.CULLING).finish(60);
+        due = orderDue.stagesDue(LocalDate.of(2026, 11, 22));
+        TestUtils.check("Отбор окончен --> size = 1, горит цвет", due.size() == 1 && due.get(0).getType() == StageType.COLOR);
+        due = orderDue.stagesDue(LocalDate.of(2026, 11, 28));
+        Order orderDueEmpty = new Order("Света", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 15, 0), 8, 40000);
+        due = orderDueEmpty.stagesDue(LocalDate.of(2026, 11, 22));
+        TestUtils.check("Заказ без снимков", due.isEmpty());
+
     }
 }
