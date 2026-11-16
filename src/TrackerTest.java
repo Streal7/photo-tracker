@@ -1,5 +1,6 @@
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 
 public class TrackerTest {
@@ -68,5 +69,26 @@ public class TrackerTest {
         }
         TestUtils.check("портрет завершён --> ближайший 28.11",
                 LocalDate.of(2026, 11, 28).equals(deadlines.nearestDeadline().orElse(null)));
+        Tracker tracker2 = new Tracker();
+        Order orderA2 = new Order("Света", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 15, 0), 8, 40000);
+        orderA2.addPayment(10000, LocalDate.of(2026, 10, 30));
+        orderA2.addPayment(30000, LocalDate.of(2026, 11, 28));
+        Order orderB2 = new Order("Анна", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 15, 0), 8, 40000);
+        tracker2.addOrder(orderA2);
+        tracker2.addOrder(orderB2);
+        TestUtils.check("Октябрь 2026 --> 10000", tracker2.earningsForMonth(YearMonth.of(2026, 10)) == 10000);
+        orderB2.addPayment(5000, LocalDate.of(2026, 11, 15));
+        orderB2.addPayment(20000, LocalDate.of(2026, 12, 2));
+        TestUtils.check("Ноябрь 2026: A 30000 + B 5000 --> 35000", tracker2.earningsForMonth(YearMonth.of(2026, 11)) == 35000);
+        TestUtils.check("Декабрь 2026: B 20000 --> 20000", tracker2.earningsForMonth(YearMonth.of(2026, 12)) == 20000);
+        TestUtils.check("Ноябрь 2025: платежей нет --> 0", tracker2.earningsForMonth(YearMonth.of(2025, 11)) == 0);
+        TestUtils.check("totalEarnings: все 4 платежа --> 65000", tracker2.totalEarnings() == 65000);
+        thrown = false;
+        try {
+            tracker2.earningsForMonth(null);
+        } catch (IllegalArgumentException e) {
+            thrown = true;
+        }
+        TestUtils.check("earningsForMonth(null) --> IAE", thrown);
     }
 }
