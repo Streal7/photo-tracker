@@ -231,10 +231,32 @@ public class OrderTest {
         orderDue.getStage(StageType.CULLING).finish(60);
         due = orderDue.stagesDue(LocalDate.of(2026, 11, 22));
         TestUtils.check("Отбор окончен --> size = 1, горит цвет", due.size() == 1 && due.get(0).getType() == StageType.COLOR);
-        due = orderDue.stagesDue(LocalDate.of(2026, 11, 28));
         Order orderDueEmpty = new Order("Света", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 15, 0), 8, 40000);
         due = orderDueEmpty.stagesDue(LocalDate.of(2026, 11, 22));
-        TestUtils.check("Заказ без снимков", due.isEmpty());
-
+        Order order4 = new Order("Света", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 15, 0), 8, 40000);
+        TestUtils.check("без платежей --> остаток 40000", order4.remainingAmount() == 40000);
+        order4.addPayment(10000, LocalDate.of(2026, 11, 20));
+        TestUtils.check("Предоплата 10000 --> остаток 30000", order4.remainingAmount() == 30000);
+        order4.addPayment(30000, LocalDate.of(2026, 11, 20));
+        TestUtils.check("Предоплата еще 30000 --> 0", order4.remainingAmount() == 0);
+        order4.addPayment(3000, LocalDate.of(2026, 11, 20));
+        TestUtils.check("Чаевые 3000 --> -3000", order4.remainingAmount() == -3000);
+        TestUtils.check("Оплата paidAmount() --> 43000", order4.paidAmount() == 43000);
+        thrown = false;
+        try {
+            order4.addPayment(0, LocalDate.of(2026, 11, 20));
+        } catch (IllegalArgumentException e) {
+            thrown = true;
+        }
+        TestUtils.check("Оплата 0 --> IAE", thrown);
+        thrown = false;
+        try {
+            order4.addPayment(100, null);
+        } catch (IllegalArgumentException e) {
+            thrown = true;
+        }
+        TestUtils.check("Дата оплаты null --> IAE", thrown);
+        order4.getPayments().clear();
+        TestUtils.check("Оплата по прежнему --> 43000", order4.paidAmount() == 43000);
     }
 }

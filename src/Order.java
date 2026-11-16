@@ -20,6 +20,8 @@ public class Order {
     private final List<Stage> stages = new ArrayList<>();
     private int shotFrames;
     private int selectedFrames;
+    private final List<Payment> payments = new ArrayList<>();
+
 
     Order(String client, ShootType shootType, LocalDateTime dateTimeShoot, double hours, int price) {
         if (client == null || client.isBlank()) {
@@ -206,4 +208,27 @@ public class Order {
         }
         return result;
     }
+
+    void addPayment(int amount, LocalDate date) {
+        Payment payment = new Payment(amount, date);
+        payments.add(payment);
+    }
+
+    List<Payment> getPayments() {
+        return new ArrayList<Payment>(payments);
+    }
+
+    int paidAmount() {
+        int sum = 0;
+        for (Payment payment : payments) {
+            sum = sum + payment.getAmount();
+        }
+        return sum;
+    }
+
+    int remainingAmount() {
+        return price - paidAmount();
+    }
+
+
 }
