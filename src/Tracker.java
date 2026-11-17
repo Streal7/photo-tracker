@@ -72,4 +72,7 @@ public class Tracker {
         }
         return earnings;
     }
+    List<Order> getOrders(){
+        return new ArrayList<>(orders);
+    }
 }
