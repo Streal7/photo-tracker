@@ -3,6 +3,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
+import java.util.List;
 import java.util.Scanner;
 
 public class Main {
@@ -31,12 +32,37 @@ public class Main {
             System.out.println();
             int cmd = readIntInRange(scanner, "Выберите пункт меню:", 0, 8);
             switch (cmd) {
+                case 1 -> handleAddOrder(scanner);
+                case 2 -> printOrders(tracker);
                 case 0 -> {
                     return;
                 }
             }
         }
     }
+
+    static void handleAddOrder(Scanner scanner) {
+        String client = readNonEmptyLine(scanner, "Введите имя клиента: ");
+        ShootType[] types = ShootType.values();
+        int index = 0;
+        for (ShootType type : types) {
+            System.out.println((index + 1) + ". " + type.getTitle());
+            index++;
+        }
+        int number = readIntInRange(scanner, "Выберите тип съемки: ", 1, types.length);
+        ShootType shootType = types[number - 1];
+        LocalDateTime dateTimeShoot = readDateTime(scanner, "Введите дату и время съемки: ");
+        double hours = readDouble(scanner, "Введите количество часов съемки: ");
+        int price = readInt(scanner, "Введите цену съемки: ");
+        try {
+            Order order = new Order(client, shootType, dateTimeShoot, hours, price);
+            tracker.addOrder(order);
+            System.out.println("Заказ добавлен.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Заказ оформлен некорректно. Ошибка: " + e.getMessage());
+        }
+    }
+
 
     static String readNonEmptyLine(Scanner scanner, String prompt) {
         while (true) {
