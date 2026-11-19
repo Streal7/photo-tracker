@@ -187,13 +187,17 @@ public class Order {
         return hasSelectedFrames() ? selectedFrames : (int) Math.round(shotFrames * SELECTION_RATE);
     }
 
-    boolean isCompleted() {
+    Optional<Stage> currentStage() {
         for (Stage stage : stages) {
             if (stage.getStatus() != StageStatus.DONE) {
-                return false;
+                return Optional.of(stage);
             }
         }
-        return true;
+        return Optional.empty();
+    }
+
+    boolean isCompleted() {
+        return currentStage().isEmpty();
     }
 
     List<Stage> stagesDue(LocalDate today) {

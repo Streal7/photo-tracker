@@ -199,6 +199,12 @@ public class OrderTest {
                 rounding.plannedSelectedFrames() == 834);
         Order fresh = new Order("Света", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 15, 0), 8, 40000);
         TestUtils.check("новый заказ → isCompleted false", !fresh.isCompleted());
+        TestUtils.check("новый заказ → currentStage() --> CULLING ", fresh.currentStage().isPresent() && fresh.currentStage().get().getType() == StageType.CULLING);
+        fresh.currentStage().get().start();
+        TestUtils.check("Текущий этап в работе → currentStage() --> IN_PROGRESS ", (fresh.currentStage().isPresent() && fresh.currentStage().get().getType() == StageType.CULLING) && (fresh.currentStage().get().getStatus() == StageStatus.IN_PROGRESS));
+        fresh.currentStage().get().finish(60);
+        TestUtils.check("Этап завершен, следующий этап стал текущим → currentStage() --> COLOR ", fresh.currentStage().isPresent() && fresh.currentStage().get().getType() == StageType.COLOR);
+
 
         Order allDone = new Order("Света", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 15, 0), 8, 40000);
         for (StageType type : StageType.values()) {
@@ -206,6 +212,7 @@ public class OrderTest {
             allDone.getStage(type).finish(60);
         }
         TestUtils.check("все 6 этапов DONE → isCompleted true", allDone.isCompleted());
+        TestUtils.check("все 6 этапов DONE → currentStage() --> Empty ", allDone.currentStage().isEmpty());
 
         Order fiveDone = new Order("Света", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 15, 0), 8, 40000);
         for (StageType type : StageType.values()) {
@@ -231,8 +238,6 @@ public class OrderTest {
         orderDue.getStage(StageType.CULLING).finish(60);
         due = orderDue.stagesDue(LocalDate.of(2026, 11, 22));
         TestUtils.check("Отбор окончен --> size = 1, горит цвет", due.size() == 1 && due.get(0).getType() == StageType.COLOR);
-        Order orderDueEmpty = new Order("Света", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 15, 0), 8, 40000);
-        due = orderDueEmpty.stagesDue(LocalDate.of(2026, 11, 22));
         Order order4 = new Order("Света", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 15, 0), 8, 40000);
         TestUtils.check("без платежей --> остаток 40000", order4.remainingAmount() == 40000);
         order4.addPayment(10000, LocalDate.of(2026, 11, 20));
