@@ -4,6 +4,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
 
 public class Main {
@@ -68,14 +69,11 @@ public class Main {
     }
 
     static void handleSetFrames(Scanner scanner) {
-        List<Order> orders = tracker.getOrders();
-        if (orders.isEmpty()) {
-            System.out.println("Список заказов пуст");
+        Optional<Order> orderBox = readOrder(scanner);
+        if (orderBox.isEmpty()){
             return;
         }
-        printOrders(tracker);
-        int number = readIntInRange(scanner, "Выберите номер заказа: ", 1, orders.size());
-        Order order = orders.get(number - 1);
+        Order order = orderBox.get();
         System.out.println("1. Ввести количество отснятых кадров");
         System.out.println("2. Ввести количество отобранных кадров");
         int cmd = readIntInRange(scanner, "Выберите что нужно ввести: ", 1, 2);
@@ -83,14 +81,14 @@ public class Main {
             try {
                 order.setShotFrames(readInt(scanner, "Введите количество отснятых кадров: "));
                 System.out.println("На отбор потребуется " + minutesPerTime(order.cullingMinutes()));
-            } catch (IllegalArgumentException e){
+            } catch (IllegalArgumentException e) {
                 System.out.println("Ошибка: " + e.getMessage());
             }
         } else {
             try {
                 order.setSelectedFrames(readInt(scanner, "Введите количество отобранных кадров: "));
                 System.out.println("На ретушь потребуется " + minutesPerTime(order.retouchMinutes()));
-            } catch (IllegalStateException | IllegalArgumentException e){
+            } catch (IllegalStateException | IllegalArgumentException e) {
                 System.out.println("Ошибка: " + e.getMessage());
             }
         }
@@ -176,7 +174,23 @@ public class Main {
         }
     }
 
-    static String minutesPerTime(double minutes){
+    static Optional<Order> readOrder(Scanner scanner) {
+        List<Order> orders = tracker.getOrders();
+        if (orders.isEmpty()) {
+            System.out.println("Список заказов пуст");
+            return Optional.empty();
+        }
+        printOrders(tracker);
+        int number = readIntInRange(scanner, "Выберите номер заказа: ", 1, orders.size());
+        int index = number - 1;
+        return Optional.of(orders.get(index));
+    }
+
+    static void handleStartStage(Scanner scanner) {
+        List<Order> orders = tracker.getOrders();
+    }
+
+    static String minutesPerTime(double minutes) {
         return String.format("%d ч., %d мин.", (int) minutes / 60, (int) minutes % 60);
     }
 }
