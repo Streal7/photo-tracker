@@ -19,6 +19,8 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
         System.out.println("====Photo Tracker v.1.0====");
         while (true) {
+            System.out.println("*".repeat(20));
+            System.out.println();
             System.out.println("1. Новый заказ");
             System.out.println("2. Список заказов");
             System.out.println("3. Ввести кадры");
@@ -28,12 +30,14 @@ public class Main {
             System.out.println("7. Сводка: в работе, ближайшая сдача");
             System.out.println("8. Заработок за месяц и всего");
             System.out.println("0. Выход");
+            System.out.println();
             System.out.println("*".repeat(20));
             System.out.println();
             int cmd = readIntInRange(scanner, "Выберите пункт меню:", 0, 8);
             switch (cmd) {
                 case 1 -> handleAddOrder(scanner);
                 case 2 -> printOrders(tracker);
+                case 3 -> handleSetFrames(scanner);
                 case 0 -> {
                     return;
                 }
@@ -63,6 +67,34 @@ public class Main {
         }
     }
 
+    static void handleSetFrames(Scanner scanner) {
+        List<Order> orders = tracker.getOrders();
+        if (orders.isEmpty()) {
+            System.out.println("Список заказов пуст");
+            return;
+        }
+        printOrders(tracker);
+        int number = readIntInRange(scanner, "Выберите номер заказа: ", 1, orders.size());
+        Order order = orders.get(number - 1);
+        System.out.println("1. Ввести количество отснятых кадров");
+        System.out.println("2. Ввести количество отобранных кадров");
+        int cmd = readIntInRange(scanner, "Выберите что нужно ввести: ", 1, 2);
+        if (cmd == 1) {
+            try {
+                order.setShotFrames(readInt(scanner, "Введите количество отснятых кадров: "));
+                System.out.println("На отбор потребуется " + minutesPerTime(order.cullingMinutes()));
+            } catch (IllegalArgumentException e){
+                System.out.println("Ошибка: " + e.getMessage());
+            }
+        } else {
+            try {
+                order.setSelectedFrames(readInt(scanner, "Введите количество отобранных кадров: "));
+                System.out.println("На ретушь потребуется " + minutesPerTime(order.retouchMinutes()));
+            } catch (IllegalStateException | IllegalArgumentException e){
+                System.out.println("Ошибка: " + e.getMessage());
+            }
+        }
+    }
 
     static String readNonEmptyLine(Scanner scanner, String prompt) {
         while (true) {
@@ -135,9 +167,16 @@ public class Main {
 
     static void printOrders(Tracker tracker) {
         int index = 1;
+        if (tracker.getOrders().isEmpty()) {
+            System.out.println("Список заказов пуст");
+        }
         for (Order order : tracker.getOrders()) {
             System.out.printf("%2d %15s %10s %15s %4.2f %5d %8s%n", index, order.getClient(), order.getShootType().getTitle(), order.getDateTimeShoot().format(DATE_TIME), order.getHours(), order.getPrice(), order.deadline().format(DATE));
             index++;
         }
+    }
+
+    static String minutesPerTime(double minutes){
+        return String.format("%d ч., %d мин.", (int) minutes / 60, (int) minutes % 60);
     }
 }
