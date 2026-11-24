@@ -33,19 +33,24 @@ public class TrackerTest {
         tracker.addOrder(orderB);
 
         // 4. Горит 22.11: отбор и цвет A
-        List<Stage> due = tracker.stagesDueToday(LocalDate.of(2026, 11, 22));
-        TestUtils.check("22.11 --> горят отбор и цвет A",
-                due.size() == 2
-                        && due.get(0) == orderA.getStage(StageType.CULLING)
-                        && due.get(1) == orderA.getStage(StageType.COLOR));
+        List<DueStage> due = tracker.stagesDueToday(LocalDate.of(2026, 11, 22));
+
+        List<DueStage> expected = List.of(
+                new DueStage(orderA.getClient(), StageType.CULLING, LocalDate.of(2026, 11, 21)),
+                new DueStage(orderA.getClient(), StageType.COLOR, LocalDate.of(2026, 11, 22))
+        );
+
+        TestUtils.check("22.11 — горят отбор и цвет A", due.equals(expected));
 
         // 5. Горит 23.11: + отбор B
         due = tracker.stagesDueToday(LocalDate.of(2026, 11, 23));
-        TestUtils.check("23.11 --> отбор и цвет A + отбор B",
-                due.size() == 3
-                        && due.get(0) == orderA.getStage(StageType.CULLING)
-                        && due.get(1) == orderA.getStage(StageType.COLOR)
-                        && due.get(2) == orderB.getStage(StageType.CULLING));
+        List<DueStage> expected23 = List.of(
+                new DueStage(orderA.getClient(), StageType.CULLING, LocalDate.of(2026, 11, 21)),
+                new DueStage(orderA.getClient(), StageType.COLOR, LocalDate.of(2026, 11, 22)),
+                new DueStage(orderB.getClient(), StageType.CULLING, LocalDate.of(2026, 11, 23))
+        );
+        TestUtils.check("23.11 --> отбор и цвет A + отбор B", due.equals(expected23));
+
 
         // 6. В работе
         TestUtils.check("в работе A и B --> 2", tracker.ordersInProgress() == 2);
