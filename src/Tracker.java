@@ -7,11 +7,16 @@ import java.util.Optional;
 public class Tracker {
     private final List<Order> orders = new ArrayList<>();
 
-
-    List<Stage> stagesDueToday(LocalDate today) {
-        List<Stage> result = new ArrayList<>();
+    List<DueStage> stagesDueToday(LocalDate today) {
+        List<DueStage> result = new ArrayList<>();
         for (Order order : orders) {
-            result.addAll(order.stagesDue(today));
+            for (Stage stage : order.stagesDue(today)) {
+                Optional<LocalDate> deadline = order.stageDeadline(stage.getType());
+                if (deadline.isPresent()) {
+                    DueStage row = new DueStage(order.getClient(), stage.getType(), deadline.get());
+                    result.add(row);
+                }
+            }
         }
         return result;
     }

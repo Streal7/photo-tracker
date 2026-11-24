@@ -1,5 +1,6 @@
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
@@ -34,11 +35,16 @@ public class Main {
             System.out.println();
             System.out.println("*".repeat(20));
             System.out.println();
-            int cmd = readIntInRange(scanner, "Выберите пункт меню:", 0, 8);
+            int cmd = readIntInRange(scanner, "Выберите пункт меню: ", 0, 8);
             switch (cmd) {
                 case 1 -> handleAddOrder(scanner);
                 case 2 -> printOrders(tracker);
                 case 3 -> handleSetFrames(scanner);
+                case 4 -> handleAdvanceStage(scanner);
+                case 5 -> handleAddPayment(scanner);
+                case 6 -> handlePrintDueStages();
+                case 7 -> handlePrintSummary();
+                case 8 -> handleEarnings(scanner);
                 case 0 -> {
                     return;
                 }
@@ -70,7 +76,7 @@ public class Main {
 
     static void handleSetFrames(Scanner scanner) {
         Optional<Order> orderBox = readOrder(scanner);
-        if (orderBox.isEmpty()){
+        if (orderBox.isEmpty()) {
             return;
         }
         Order order = orderBox.get();
@@ -186,8 +192,101 @@ public class Main {
         return Optional.of(orders.get(index));
     }
 
-    static void handleStartStage(Scanner scanner) {
-        List<Order> orders = tracker.getOrders();
+    static void handleAdvanceStage(Scanner scanner) {
+        Optional<Order> orderOptional = readOrder(scanner);
+        if (orderOptional.isEmpty()) {
+            System.out.println("Заказ не выбран");
+            return;
+        }
+
+        Order order = orderOptional.get();
+        Optional<Stage> currentStageOptional = order.currentStage();
+
+        if (currentStageOptional.isEmpty()) {
+            System.out.println("Все этапы завершены, заказ выполнен");
+            return;
+        }
+
+        Stage currentStage = currentStageOptional.get();
+
+        if (currentStage.getStatus() == StageStatus.NOT_STARTED) {
+            currentStage.start();
+            System.out.println("Этап " + currentStage.getType().getTitle() + " начат");
+            return;
+        }
+
+        if (currentStage.getStatus() == StageStatus.IN_PROGRESS) {
+            int actualMinutes = readIntInRange(
+                    scanner,
+                    "Введите фактическое время выполнения этапа",
+                    1,
+                    5000
+            );
+
+            currentStage.finish(actualMinutes);
+
+            Optional<Stage> nextStageOptional = order.currentStage();
+            if (nextStageOptional.isPresent()) {
+                nextStageOptional.get().start();
+                System.out.println("Начат следующий этап - " + nextStageOptional.get().getType().getTitle());
+            } else {
+                System.out.println("Все этапы завершены, заказ выполнен");
+            }
+        }
+    }
+
+    static void handleAddPayment(Scanner scanner) {
+        Optional<Order> orderBox = readOrder(scanner);
+        if (orderBox.isEmpty()) {
+            return;
+        }
+        Order order = orderBox.get();
+        int amount = readInt(scanner, "Введите сумму оплаты: ");
+        LocalDate paymentDate = readDate(scanner, "Введите дату оплаты: ");
+        try {
+            order.addPayment(amount, paymentDate);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Ошибка: " + e.getMessage());
+            return;
+        }
+        System.out.println("Платеж добавлен.");
+        System.out.println("Оплачено всего: " + order.paidAmount() + "₽");
+        System.out.println("Осталось оплатить: " + order.remainingAmount() + "₽");
+    }
+
+    static void handleEarnings(Scanner scanner) {
+        int month = readIntInRange(scanner, "Введите месяц: ", 1, 12);
+        int year = readIntInRange(scanner, "Введите год: ", 2026, 2100);
+        YearMonth yearMonth = YearMonth.of(year, month);
+        System.out.println("За месяц: " + tracker.earningsForMonth(yearMonth));
+        System.out.println("За все время: " + tracker.totalEarnings());
+    }
+
+    static void handlePrintSummary() {
+        int inProgress = tracker.ordersInProgress();
+        System.out.println("Заказов в работе: " + inProgress);
+        if (tracker.nearestDeadline().isPresent()) {
+            LocalDate deadline = tracker.nearestDeadline().get();
+            String formattedDeadline = deadline.format(DATE);
+            System.out.println("Ближайшая сдача: " + formattedDeadline);
+            return;
+        }
+        System.out.println("Ближайшая сдача: —");
+    }
+    static void handlePrintDueStages(){
+        LocalDate today = LocalDate.now();
+        List<DueStage> listOfDue = tracker.stagesDueToday(today);
+        if (listOfDue.isEmpty()){
+            System.out.println("Нет этапов со сроком на сегодня или раньше");
+            return;
+        }
+        for (DueStage dueStage : listOfDue){
+            String client = dueStage.client();
+            String stageTitle = dueStage.stageType().getTitle();
+            LocalDate deadline = dueStage.deadline();
+            String label = deadline.isBefore(today) ? "просрочен" : "сегодня";
+            System.out.printf("%-10s | %-16s | %s | %s%n", client, stageTitle, deadline.format(DATE), label);
+        }
     }
 
     static String minutesPerTime(double minutes) {
