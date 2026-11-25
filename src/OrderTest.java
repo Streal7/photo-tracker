@@ -1,9 +1,13 @@
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 public class OrderTest {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Order order = new Order("Мария", ShootType.WEDDING, LocalDateTime.of(2026, 11, 14, 15, 0), 5, 25000);
         TestUtils.check("new Order(\"Мария\",...).getClient --> Мария", "Мария".equals(order.getClient()));
         TestUtils.check("new Order(...,ShootType.WEDDING,...).getShootType --> WEDDING", order.getShootType() == ShootType.WEDDING);
@@ -263,5 +267,51 @@ public class OrderTest {
         TestUtils.check("Дата оплаты null --> IAE", thrown);
         order4.getPayments().clear();
         TestUtils.check("Оплата по прежнему --> 43000", order4.paidAmount() == 43000);
+        Order order5 = new Order("Анна", ShootType.WEDDING, LocalDateTime.of(2026, 11, 25, 15, 00), 8, 40000);
+        TestUtils.check("encode сохраняет семь полей заказа", "Анна|WEDDING|2026-11-25T15:00|8.0|40000|0|0".equals(OrderFileStorage.encode(order5)));
+        Order restored = OrderFileStorage.decode(OrderFileStorage.encode(order5));
+        TestUtils.check("После восстановления имя клиента совпадает", order5.getClient().equals(restored.getClient()));
+        TestUtils.check("После восстановления тип съёмки совпадает", order5.getShootType() == restored.getShootType());
+        TestUtils.check("После восстановления дата совпадает", order5.getDateTimeShoot().equals(restored.getDateTimeShoot()));
+        TestUtils.check("После восстановления часы съемки совпадают", order5.getHours() == restored.getHours());
+        TestUtils.check("После восстановления цена совпадает", order5.getPrice() == restored.getPrice());
+        List<Order> orderList = new ArrayList<>();
+        Order orderAnna = new Order("Анна", ShootType.WEDDING, LocalDateTime.of(2026,11,25,15,0), 8, 40000);
+        Order orderIgor = new Order("Игорь", ShootType.PORTRAIT, LocalDateTime.of(2026,11,26,12,0), 2 , 8000);
+        Order legacyOrder = OrderFileStorage.decode(
+                "Анна|WEDDING|2026-11-25T15:00|8.0|40000");
+
+        TestUtils.check("Старый формат читается с нулевыми счётчиками",
+                legacyOrder.getShotFrames() == 0
+                        && legacyOrder.getSelectedFrames() == 0);
+
+        orderAnna.setShotFrames(8000);
+        orderAnna.setSelectedFrames(800);
+        orderIgor.setShotFrames(800);
+        orderList.add(orderAnna);
+        orderList.add(orderIgor);
+        orderList.add(legacyOrder);
+        Path path = Files.createTempFile("photo-tracker-test-", ".txt");
+        try {
+            OrderFileStorage.saveToFile(path, orderList);
+            List<Order> loadedOrders = OrderFileStorage.loadFromFile(path);
+            boolean sameSize = orderList.size() == loadedOrders.size();
+            TestUtils.check("Соответствие размера сохраняемого и загруженного", sameSize);
+            if (sameSize) {
+                for (int i = 0; i < orderList.size(); i++) {
+                    Order expected = orderList.get(i);
+                    Order actual = loadedOrders.get(i);
+                    TestUtils.check("Проверка соответствия записанного в файл и сохраненного значения " + (i + 1) + " строка поле клиент", expected.getClient().equals(actual.getClient()));
+                    TestUtils.check("Проверка соответствия записанного в файл и сохраненного значения " + (i + 1) + " строка поле ShootType", expected.getShootType() == (actual.getShootType()));
+                    TestUtils.check("Проверка соответствия записанного в файл и сохраненного значения " + (i + 1) + " строка поле dateTimeShoot", expected.getDateTimeShoot().equals(actual.getDateTimeShoot()));
+                    TestUtils.check("Проверка соответствия записанного в файл и сохраненного значения " + (i + 1) + " строка поле hours", expected.getHours() == actual.getHours());
+                    TestUtils.check("Проверка соответствия записанного в файл и сохраненного значения " + (i + 1) + " строка поле price", expected.getPrice() == actual.getPrice());
+                    TestUtils.check("Проверка соответствия записанного в файл и сохраненного значения " + (i + 1) + " строка shotFrames", expected.getShotFrames() == actual.getShotFrames());
+                    TestUtils.check("Проверка соответствия записанного в файл и сохраненного значения " + (i + 1) + " строка selectedFrames", expected.getSelectedFrames() == actual.getSelectedFrames());
+                }
+            }
+        } finally {
+            Files.deleteIfExists(path);
+        }
     }
 }

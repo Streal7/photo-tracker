@@ -1,3 +1,6 @@
+import java.io.IOException;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -14,7 +17,17 @@ public class Main {
     private static final Tracker tracker = new Tracker();
 
     public static void main(String[] args) {
+        Path path = Path.of("orders.txt");
+        System.out.println(path.toAbsolutePath());
+        if (!loadOrders(path)){
+            return;
+        }
         printMenu();
+        try{
+            OrderFileStorage.saveToFile(path, tracker.getOrders());
+        }catch (IOException e){
+            System.out.println("Ошибка сохранения");
+        }
     }
 
     static void printMenu() {
@@ -273,14 +286,15 @@ public class Main {
         }
         System.out.println("Ближайшая сдача: —");
     }
-    static void handlePrintDueStages(){
+
+    static void handlePrintDueStages() {
         LocalDate today = LocalDate.now();
         List<DueStage> listOfDue = tracker.stagesDueToday(today);
-        if (listOfDue.isEmpty()){
+        if (listOfDue.isEmpty()) {
             System.out.println("Нет этапов со сроком на сегодня или раньше");
             return;
         }
-        for (DueStage dueStage : listOfDue){
+        for (DueStage dueStage : listOfDue) {
             String client = dueStage.client();
             String stageTitle = dueStage.stageType().getTitle();
             LocalDate deadline = dueStage.deadline();
@@ -289,7 +303,24 @@ public class Main {
         }
     }
 
+
     static String minutesPerTime(double minutes) {
         return String.format("%d ч., %d мин.", (int) minutes / 60, (int) minutes % 60);
+    }
+
+    static boolean loadOrders(Path path) {
+        try {
+            List<Order> orders = OrderFileStorage.loadFromFile(path);
+            for (Order order : orders) {
+                tracker.addOrder(order);
+            }
+        } catch (NoSuchFileException e) {
+            System.out.println("Файл заказов пока не создан. Начинаем с пустого списка");
+            return true;
+        } catch (IOException | IllegalArgumentException | DateTimeParseException e) {
+            System.out.println("Ошибка " + e);
+            return false;
+        }
+        return true;
     }
 }
